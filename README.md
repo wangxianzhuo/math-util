@@ -5,11 +5,14 @@
 1. 提供插值法求点（当前支持三次样条插值）
 
 ## Usage
+```shell
+$ go get -u github.com/wangxianzhuo/math-util
+```
 
 ```go
 package main
 
-import util "github.com/wangxianzhuo/math-util"
+import interpolation "github.com/wangxianzhuo/math-util/interpolation"
 import log
 
 func main() {
@@ -18,7 +21,7 @@ func main() {
 
     x := 9.4
 
-    y, err := util.Interpolation(x, pointX, pointY, util.DefaultInterpolation)
+    y, err := interpolation.Interpolation(x, pointX, pointY, interpolation.DefaultInterpolation)
     if err != nil {
         log.Printf("interpolation calc error: %v", err)
         return
