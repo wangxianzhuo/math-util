@@ -2,6 +2,7 @@ package polynomial
 
 import (
 	"fmt"
+	"strings"
 )
 
 // CubicPolynomial 三次多项式
@@ -28,16 +29,22 @@ func (p CubicPolynomial) String() string {
 	}
 	if p.B == 0 {
 		b = ""
+	} else if p.B < 0 {
+		b = fmt.Sprintf(" - %vx^2", p.B*-1)
 	} else {
 		b = fmt.Sprintf(" + %vx^2", p.B)
 	}
 	if p.C == 0 {
 		c = ""
+	} else if p.C < 0 {
+		c = fmt.Sprintf(" - %vx", p.C*-1)
 	} else {
 		c = fmt.Sprintf(" + %vx", p.C)
 	}
 	if p.D == 0 {
 		d = ""
+	} else if p.D < 0 {
+		d = fmt.Sprintf(" - %v", p.D*-1)
 	} else {
 		d = fmt.Sprintf(" + %v", p.D)
 	}
@@ -77,9 +84,15 @@ func (p CubicPolynomial) String() string {
 
 	if a == "" && b == "" && c == "" && d == "" {
 		return "F(x) = 0, " + condition
-	} else {
-		return "F(x) = " + a + b + c + d + ", " + condition
 	}
+	e := strings.TrimSpace(a + b + c + d)
+	if strings.HasPrefix(e, "+") {
+		e = e[1:]
+	} else if strings.HasPrefix(e, "-") {
+		e = "-" + strings.TrimSpace(e[1:])
+	}
+	return "F(x) = " + strings.TrimSpace(e) + ", " + condition
+
 }
 
 // NewCubicPolynomial get a CubicPolynomial

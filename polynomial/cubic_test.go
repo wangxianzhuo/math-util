@@ -159,6 +159,20 @@ func Test_CubicString(t *testing.T) {
 		IsMinInfinite: true,
 	}
 	fmt.Printf("%v\n", p11)
+
+	p12 := CubicPolynomial{
+		A:             0,
+		B:             -1,
+		C:             -4.6,
+		D:             -1.40,
+		Max:           1,
+		Min:           0,
+		CanMax:        false,
+		CanMin:        false,
+		IsMaxInfinite: false,
+		IsMinInfinite: true,
+	}
+	fmt.Printf("%v\n", p12)
 }
 
 func Test_CheckDOD(t *testing.T) {
