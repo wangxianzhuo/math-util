@@ -72,3 +72,12 @@ func Benchmark_Cofactor(b *testing.B) {
 		det.Cofactor(0, 0)
 	}
 }
+
+func Test_CalculateValue(t *testing.T) {
+	e := [][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+	det, err := NewDeterminantWithValue(e)
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	fmt.Printf("%v\nvalue = %v\n", det, det.Value)
+}
