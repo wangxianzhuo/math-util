@@ -81,3 +81,48 @@ func Test_CalculateValue(t *testing.T) {
 	}
 	fmt.Printf("%v\nvalue = %v\n", det, det.Value)
 }
+
+func Test_CalculateValueParallel(t *testing.T) {
+	e := [][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+	det, err := NewDeterminantWithValueParallel(e)
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	fmt.Printf("%v\nvalue = %v\n", det, det.Value)
+}
+
+func Test_Expanse(t *testing.T) {
+	e := [][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+	det, err := NewDeterminant(e)
+	ds, err := det.Expanse(0, UseRow)
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	fmt.Printf("ds %v\n", ds)
+}
+
+func Benchmark_Expanse(b *testing.B) {
+	// e := [][]float64{
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// 	{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+	// }
+	// e := [][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+	// e := [][]float64{{1, 2}, {4, 5}}
+	// det, _ := NewDeterminant(e)
+	det := generateDeteminantByRank(10)
+	// fmt.Println(det)
+	for i := 0; i < b.N; i++ {
+		_, err := det.Expanse(0, UseRow)
+		if err != nil {
+			b.Errorf("%v\n", err)
+		}
+	}
+}

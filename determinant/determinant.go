@@ -61,6 +61,31 @@ func NewDeterminantWithValue(elements [][]float64) (*Determinant, error) {
 	return det, nil
 }
 
+// NewDeterminantWithValueParallel new a Determinant with Value parallel
+func NewDeterminantWithValueParallel(elements [][]float64) (*Determinant, error) {
+	det, err := NewDeterminant(elements)
+	if err != nil {
+		return nil, fmt.Errorf("Create new determinant with value error: %v", err)
+	}
+	// det.Value, err = det.CalculateValueParalle()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Create new determinant with value calculate value error: %v", err)
+	// }
+
+	valueChan := make(chan CalcValue)
+	defer close(valueChan)
+	go det.CalculateValueParalle(valueChan, det.Rank)
+	select {
+	case value := <-valueChan:
+		if v, ok := value.value.(float64); !ok {
+			return nil, fmt.Errorf("Create new determinant with value error: get error value")
+		} else {
+			det.Value = v
+		}
+	}
+	return det, nil
+}
+
 func (d *Determinant) String() string {
 	buf := bytes.NewBufferString("factor ")
 	buf.WriteString(fmt.Sprintf("%v\n", d.Factor))
@@ -126,7 +151,89 @@ func (d *Determinant) CalculateValue() (float64, error) {
 	return value * d.Factor, nil
 }
 
-// TODO:计算行列式的值（并行版）
+// CalcValue 带error的数据
+type CalcValue struct {
+	value interface{}
+	err   error
+}
+
+// CalculateValueParalle 计算行列式的值（并行版）
+func (d *Determinant) CalculateValueParalle(valueChan chan CalcValue, rootRank int) {
+	var value float64
+
+	if d.Rank == 1 {
+		value, err := d.GetElement(0, 0)
+		if err != nil {
+			valueChan <- CalcValue{
+				err: fmt.Errorf("Calculate determinant value error: %v", err),
+			}
+			return
+		}
+		valueChan <- CalcValue{
+			value: value * d.Factor,
+		}
+		return
+	}
+
+	ds, err := d.Expanse(0, UseRow)
+	if err != nil {
+		valueChan <- CalcValue{
+			err: fmt.Errorf("Calculate determinant value error: %v", err),
+		}
+	}
+	// fmt.Printf("determinants: %v", ds)
+
+	if d.Rank == rootRank {
+		subValueChan := make(chan CalcValue)
+		defer close(subValueChan)
+
+		for _, det := range ds {
+			go det.CalculateValueParalle(subValueChan, rootRank)
+		}
+
+		counter := d.Rank
+		var errList []error
+		for subValue := range subValueChan {
+			if subValue.err != nil {
+				errList = append(errList, subValue.err)
+			}
+			if v, ok := subValue.value.(float64); !ok {
+				errList = append(errList, fmt.Errorf("unknown value of cofactor"))
+			} else {
+				value += v
+			}
+			counter--
+			if counter == 0 {
+				break
+			}
+		}
+	} else {
+		ds, err := d.Expanse(0, UseRow)
+		if err != nil {
+			valueChan <- CalcValue{
+				err: fmt.Errorf("Calculate determinant value error: %v", err),
+			}
+		}
+		// fmt.Printf("determinants: %v", ds)
+		var errList []error
+		for _, det := range ds {
+			v, err := det.CalculateValue()
+			if err != nil {
+				errList = append(errList, err)
+			}
+			value += v
+		}
+		if len(errList) != 0 {
+			valueChan <- CalcValue{
+				err: fmt.Errorf("Calculate determinant value error: %v", errList),
+			}
+			return
+		}
+	}
+	valueChan <- CalcValue{
+		value: value * d.Factor,
+	}
+}
 
 // Expanse 行列式按行（列）展开，默认按行展开
 func (d *Determinant) Expanse(order int, eType RowCowType) ([]*Determinant, error) {
