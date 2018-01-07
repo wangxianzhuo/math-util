@@ -19,7 +19,11 @@ type Equation struct {
 func (e Equation) String() string {
 	buf := bytes.NewBufferString("")
 	for index, f := range e.Factors {
-		if f < 0 {
+		if f == -1 {
+			buf.WriteString(fmt.Sprintf("- x%d ", index))
+		} else if f == 1 {
+			buf.WriteString(fmt.Sprintf("+ x%d ", index))
+		} else if f < 0 {
 			buf.WriteString(fmt.Sprintf("- %vx%d ", f*-1, index))
 		} else if f != 0 {
 			buf.WriteString(fmt.Sprintf("+ %vx%d ", f, index))
@@ -53,4 +57,36 @@ func NewEquation(unknownNum int, factors []float64, value float64) (Equation, er
 type Equations struct {
 	EquationList []Equation
 	UnknownNum   int
+}
+
+func (e Equations) String() string {
+	buf := bytes.NewBufferString(fmt.Sprintf("unknown number %v\n", e.UnknownNum))
+	for _, equation := range e.EquationList {
+		buf.WriteString(equation.String())
+		buf.WriteString("\n")
+	}
+	return buf.String()
+}
+
+// NewEquations new an equations
+func NewEquations(unknownNum int, equationList []Equation) (Equations, error) {
+	for _, equation := range equationList {
+		if equation.UnknownNum != unknownNum {
+			return Equations{}, fmt.Errorf("Create new equtaions error: equation [%v] unknown number [%v] can't match the unknown number %v", equation, equation.UnknownNum, unknownNum)
+		}
+	}
+
+	return Equations{
+		UnknownNum:   unknownNum,
+		EquationList: equationList,
+	}, nil
+}
+
+// EquationsValueVector 返回方程组值向量
+func (e Equations) EquationsValueVector() []float64 {
+	values := make([]float64, e.UnknownNum)
+	for index, equation := range e.EquationList {
+		values[index] = equation.Value
+	}
+	return values
 }

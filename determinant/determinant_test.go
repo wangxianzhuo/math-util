@@ -2,6 +2,7 @@ package determinant
 
 import "testing"
 import "fmt"
+import "github.com/wangxianzhuo/math-util/equation/linear"
 
 func Test_CalculateInversionNumber(t *testing.T) {
 	n1 := []int{1, 2, 3, 4, 5}
@@ -74,7 +75,13 @@ func Benchmark_Cofactor(b *testing.B) {
 }
 
 func Test_CalculateValue(t *testing.T) {
-	e := [][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+	// e := [][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
+	e := [][]float64{
+		{3, 1, -1, 2},
+		{-5, 1, 3, -4},
+		{2, 0, 1, -1},
+		{1, -5, 3, -3},
+	}
 	det, err := NewDeterminantWithValue(e)
 	if err != nil {
 		t.Errorf("%v\n", err)
@@ -125,4 +132,61 @@ func Benchmark_Expanse(b *testing.B) {
 			b.Errorf("%v\n", err)
 		}
 	}
+}
+
+func Test_replaceRowOrCow(t *testing.T) {
+	det := generateDeteminantByRank(3)
+	list1 := []float64{1.5, 1.5, 1.5}
+	list2 := []float64{2.5, 2.5}
+
+	t.Logf("## before replace, the det is : %v\n", det)
+	newDet, err := replaceRowOrCow(det, list1, 0, UseCow)
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	t.Logf("## after replace cow 0, the det is : %v\n", newDet)
+	_, err = replaceRowOrCow(det, list1, 4, UseCow)
+	if err != nil {
+		t.Logf("expect error: %v\n", err)
+	}
+	_, err = replaceRowOrCow(det, list2, 0, UseCow)
+	if err != nil {
+		t.Logf("expect error: %v\n", err)
+	}
+}
+
+func Test_equationsToDeterminant(t *testing.T) {
+	e1, _ := linear.NewEquation(4, []float64{2, 1, -5, 1}, 8)
+	e2, _ := linear.NewEquation(4, []float64{1, -3, 0, -6}, 9)
+	e3, _ := linear.NewEquation(4, []float64{0, 2, -1, 2}, -5)
+	e4, _ := linear.NewEquation(4, []float64{1, 4, -7, 6}, 0)
+
+	es, err := linear.NewEquations(4, []linear.Equation{e1, e2, e3, e4})
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	det, err := equationsToDeterminant(es)
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	fmt.Printf("equations: %v\n", es)
+	fmt.Printf("det: %v\n", det)
+}
+
+func Test_KramerRuleSolveEquation(t *testing.T) {
+	e1, _ := linear.NewEquation(4, []float64{2, 1, -5, 1}, 8)
+	e2, _ := linear.NewEquation(4, []float64{1, -3, 0, -6}, 9)
+	e3, _ := linear.NewEquation(4, []float64{0, 2, -1, 2}, -5)
+	e4, _ := linear.NewEquation(4, []float64{1, 4, -7, 6}, 0)
+
+	es, err := linear.NewEquations(4, []linear.Equation{e1, e2, e3, e4})
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+
+	results, err := KramerRuleSolveEquation(es)
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	fmt.Printf("equations : %v\n solve : %v\n", es, results)
 }

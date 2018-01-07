@@ -1,6 +1,10 @@
 package determinant
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wangxianzhuo/math-util/equation/linear"
+)
 
 func Benchmark_CalculateValue_1(b *testing.B) {
 	det := generateDeteminantByRank(1)
@@ -226,4 +230,22 @@ func generateDeteminantByRank(rank int) *Determinant {
 
 	d, _ := NewDeterminant(element)
 	return d
+}
+
+func Benchmark_KramerRuleSolveEquation(b *testing.B) {
+	e1, _ := linear.NewEquation(4, []float64{2, 1, -5, 1}, 8)
+	e2, _ := linear.NewEquation(4, []float64{1, -3, 0, -6}, 9)
+	e3, _ := linear.NewEquation(4, []float64{0, 2, -1, 2}, -5)
+	e4, _ := linear.NewEquation(4, []float64{1, 4, -7, 6}, 0)
+
+	es, err := linear.NewEquations(4, []linear.Equation{e1, e2, e3, e4})
+	if err != nil {
+		b.Errorf("%v\n", err)
+	}
+	for i := 0; i < b.N; i++ {
+		_, err := KramerRuleSolveEquation(es)
+		if err != nil {
+			b.Errorf("%v\n", err)
+		}
+	}
 }

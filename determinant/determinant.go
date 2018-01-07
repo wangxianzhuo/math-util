@@ -2,6 +2,7 @@ package determinant
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -110,8 +111,26 @@ func (d *Determinant) GetElement(i, j int) (float64, error) {
 	if i < 0 || j < 0 {
 		return 0, fmt.Errorf("row %v or cow %v lower than 0", i, j)
 	}
-
+	d.Mu.RLock()
+	defer d.Mu.RUnlock()
 	return d.Elements[i][j], nil
+}
+
+// SetElement 修改行列式元素，线程安全
+func (d *Determinant) SetElement(value float64, i, j int) error {
+	if i > d.Rank-1 {
+		return fmt.Errorf("row %v exceed bound %v", i, d.Rank)
+	}
+	if j > d.Rank-1 {
+		return fmt.Errorf("cow %v exceed bound %v", i, d.Rank)
+	}
+	if i < 0 || j < 0 {
+		return fmt.Errorf("row %v or cow %v lower than 0", i, j)
+	}
+	d.Mu.Lock()
+	defer d.Mu.Unlock()
+	d.Elements[i][j] = value
+	return nil
 }
 
 // MultiplyFactor 行列式乘系数
@@ -119,6 +138,23 @@ func (d *Determinant) MultiplyFactor(factor float64) {
 	d.Mu.Lock()
 	defer d.Mu.Unlock()
 	d.Factor *= factor
+}
+
+// GetValue 返回行列式的值
+func (d *Determinant) GetValue() (float64, error) {
+	var value float64
+	valueChan := make(chan CalcValue)
+	defer close(valueChan)
+	go d.CalculateValueParalle(valueChan, d.Rank)
+	select {
+	case result := <-valueChan:
+		if v, ok := result.value.(float64); !ok {
+			return 0.0, fmt.Errorf("Get determinant's value error: get error value")
+		} else {
+			value = v
+		}
+	}
+	return value, nil
 }
 
 // CalculateValue 计算行列式的值
@@ -276,8 +312,98 @@ func CalculateInversionNumber(numbers []int) int {
 	return result
 }
 
+// ErrEquationNoSolves 方程组无解
+var ErrEquationNoSolves = errors.New("equations have no results")
+
 // KramerRuleSolveEquation 克拉默法则解方程组
 // TODO:
 func KramerRuleSolveEquation(equations linear.Equations) ([]float64, error) {
-	return nil, nil
+	valueList := equations.EquationsValueVector()
+	det, err := equationsToDeterminant(equations)
+	if err != nil {
+		return nil, fmt.Errorf("sovle equations error: %v", err)
+	}
+	D, err := det.GetValue()
+	if err != nil {
+		return nil, fmt.Errorf("sovle equations error: %v", err)
+	}
+	if D == 0 {
+		return nil, ErrEquationNoSolves
+	}
+	Dn := make([]float64, equations.UnknownNum)
+
+	for cow := 0; cow < det.Rank; cow++ {
+		newDet, _ := replaceRowOrCow(det, valueList, cow, UseCow)
+		Dn[cow], err = newDet.GetValue()
+		if err != nil {
+			return nil, fmt.Errorf("sovle equations error: %v", err)
+		}
+	}
+
+	resultList := make([]float64, equations.UnknownNum)
+	for index := 0; index < equations.UnknownNum; index++ {
+		resultList[index] = Dn[index] / D
+	}
+
+	return resultList, nil
+}
+
+func replaceRowOrCow(det *Determinant, list []float64, order int, eType RowCowType) (*Determinant, error) {
+	if order > det.Rank {
+		c := ""
+		switch eType {
+		case UseCow:
+			c = "cow"
+		default:
+			c = "row"
+		}
+		return nil, fmt.Errorf("replace %s error: %v exceed det's rank %v", c, order, det.Rank)
+	}
+	if len(list) != det.Rank {
+		return nil, fmt.Errorf("replace determinant row or cow error: the give list %v can't match the det's rank %v", list, det.Rank)
+	}
+
+	elements := make([][]float64, det.Rank)
+	switch eType {
+	case UseCow:
+		for row := 0; row < det.Rank; row++ {
+			elements[row] = make([]float64, det.Rank)
+			for cow := 0; cow < det.Rank; cow++ {
+				if cow == order {
+					elements[row][cow] = list[row]
+				} else {
+					elements[row][cow], _ = det.GetElement(row, cow)
+				}
+			}
+		}
+	default:
+		for row := 0; row < det.Rank; row++ {
+			elements[row] = make([]float64, det.Rank)
+			for cow := 0; cow < det.Rank; cow++ {
+				if row == order {
+					elements[row][cow] = list[row]
+				} else {
+					elements[row][cow], _ = det.GetElement(row, cow)
+				}
+			}
+		}
+	}
+	return NewDeterminant(elements)
+}
+
+// equationsToDeterminant 返回一个未结算值的行列式
+func equationsToDeterminant(equations linear.Equations) (*Determinant, error) {
+	unknownNumber := equations.UnknownNum
+	elements := make([][]float64, unknownNumber)
+	for i, equation := range equations.EquationList {
+		if unknownNumber != equation.UnknownNum {
+			return nil, fmt.Errorf("equation [%v]'s unknown number can't match equations'(%v)", equation, unknownNumber)
+		}
+		line := make([]float64, equation.UnknownNum)
+		for j, value := range equation.Factors {
+			line[j] = value
+		}
+		elements[i] = line
+	}
+	return NewDeterminant(elements)
 }
