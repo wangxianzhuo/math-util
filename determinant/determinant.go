@@ -316,7 +316,6 @@ func CalculateInversionNumber(numbers []int) int {
 var ErrEquationNoSolves = errors.New("equations have no results")
 
 // KramerRuleSolveEquation 克拉默法则解方程组
-// TODO:
 func KramerRuleSolveEquation(equations linear.Equations) ([]float64, error) {
 	valueList := equations.EquationsValueVector()
 	det, err := equationsToDeterminant(equations)
@@ -346,6 +345,71 @@ func KramerRuleSolveEquation(equations linear.Equations) ([]float64, error) {
 	}
 
 	return resultList, nil
+}
+
+// KramerRuleSolveEquationParallel 克拉默法则解方程组，并行算法
+// TODO: 分析并行运算效率
+func KramerRuleSolveEquationParallel(equations linear.Equations) ([]float64, error) {
+	valueList := equations.EquationsValueVector()
+	det, err := equationsToDeterminant(equations)
+	if err != nil {
+		return nil, fmt.Errorf("sovle equations error: %v", err)
+	}
+	D, err := det.GetValue()
+	if err != nil {
+		return nil, fmt.Errorf("sovle equations error: %v", err)
+	}
+	if D == 0 {
+		return nil, ErrEquationNoSolves
+	}
+
+	resultList := make([]float64, equations.UnknownNum)
+	dataChan := make(chan replacedDetValue)
+	defer close(dataChan)
+
+	for index := 0; index < equations.UnknownNum; index++ {
+		go replacedDetParallel(det, valueList, index, dataChan, index)
+	}
+
+	counter := equations.UnknownNum
+	var errList []error
+	for data := range dataChan {
+		if data.err != nil {
+			errList = append(errList, data.err)
+		} else {
+			resultList[data.index] = data.value / D
+		}
+		counter--
+		if counter == 0 {
+			break
+		}
+	}
+	if len(errList) != 0 {
+		return nil, fmt.Errorf("sovle equations error: %v", errList)
+	}
+
+	return resultList, nil
+}
+
+type replacedDetValue struct {
+	index int
+	value float64
+	err   error
+}
+
+func replacedDetParallel(det *Determinant, valueList []float64, cow int, dataChan chan replacedDetValue, index int) {
+	newDet, _ := replaceRowOrCow(det, valueList, cow, UseCow)
+	value, err := newDet.GetValue()
+	if err != nil {
+		dataChan <- replacedDetValue{
+			err: fmt.Errorf("Replace determinant value error: %v", err),
+		}
+		return
+	}
+	dataChan <- replacedDetValue{
+		index: index,
+		value: value,
+	}
 }
 
 func replaceRowOrCow(det *Determinant, list []float64, order int, eType RowCowType) (*Determinant, error) {

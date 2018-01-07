@@ -190,3 +190,20 @@ func Test_KramerRuleSolveEquation(t *testing.T) {
 	}
 	fmt.Printf("equations : %v\n solve : %v\n", es, results)
 }
+func Test_KramerRuleSolveEquationParallel(t *testing.T) {
+	e1, _ := linear.NewEquation(4, []float64{2, 1, -5, 1}, 8)
+	e2, _ := linear.NewEquation(4, []float64{1, -3, 0, -6}, 9)
+	e3, _ := linear.NewEquation(4, []float64{0, 2, -1, 2}, -5)
+	e4, _ := linear.NewEquation(4, []float64{1, 4, -7, 6}, 0)
+
+	es, err := linear.NewEquations(4, []linear.Equation{e1, e2, e3, e4})
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+
+	results, err := KramerRuleSolveEquationParallel(es)
+	if err != nil {
+		t.Errorf("%v\n", err)
+	}
+	fmt.Printf("equations : %v\n solve : %v\n", es, results)
+}
