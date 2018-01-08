@@ -32,10 +32,18 @@ type Determinant struct {
 func NewDeterminant(elements [][]float64) (*Determinant, error) {
 	// var err error
 	row := len(elements)
-	cow := len(elements[0])
-	if row != cow || row == 0 || cow == 0 {
-		return nil, fmt.Errorf("Create new determinant error: the elements(%v) with row(%v) cow(%v) are illegal", elements, row, cow)
+	if row == 0 {
+		return nil, fmt.Errorf("Create new determinant error: the elements(%v) is illegal", elements)
 	}
+	for i := 0; i < row; i++ {
+		cowLen := len(elements[i])
+		if cowLen > row {
+			return nil, fmt.Errorf("Create new determinant error: the elements(%v) should have %v cow, but in %v row has %v cow. It's illegal", elements, row, i+1, cowLen)
+		} else if cowLen != row {
+			return nil, fmt.Errorf("Create new determinant error: the elements(%v)'s %v row has %v cow. It's illegal", elements, i+1, cowLen)
+		}
+	}
+
 	d := Determinant{
 		Elements: elements,
 		Factor:   1,

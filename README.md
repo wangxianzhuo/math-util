@@ -52,3 +52,16 @@ func main() {
 }
 
 ```
+
+## Http Server
+
+### Start server
+
+- 在`confi.json`中配置`Port`作为服务器监听端口
+
+### 计算行列式值
+
+- URL `/det/value`
+- Method `GET`
+- Param `elements=[[1,2,3],[4,5,6],[7,8,9]]`
+- Retrun `{"value":0}`
