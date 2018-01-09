@@ -65,3 +65,10 @@ func main() {
 - Method `GET`
 - Param `elements=[[1,2,3],[4,5,6],[7,8,9]]`
 - Retrun `{"value":0}`
+
+### 行列式展开
+
+- URL `/det/expanse`
+- Method `GET`
+- Param `elements=[[1,2,3],[4,5,6],[7,8,9]]&order=0&cowRowType=0`
+- Retrun `[{"Elements":[[5,6],[8,9]],"Rank":2,"Factor":1},{"Elements":[[4,6],[7,9]],"Rank":2,"Factor":-2},{"Elements":[[4,5],[7,8]],"Rank":2,"Factor":3}]`

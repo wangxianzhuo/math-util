@@ -24,8 +24,8 @@ type Determinant struct {
 	Elements [][]float64
 	Rank     int
 	Factor   float64
-	Value    float64
-	Mu       sync.RWMutex
+	Value    float64      `json:"-"`
+	Mu       sync.RWMutex `json:"-"`
 }
 
 // NewDeterminant new a Determinant
