@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/astaxie/beego"
 	"github.com/wangxianzhuo/math-util/controllers"
 )
@@ -10,12 +8,31 @@ import (
 func main() {
 	beego.Router("/det/value", &controllers.DetController{}, "get:Value")
 	beego.Router("/det/expanse", &controllers.DetController{}, "get:Expanse")
-	beego.ErrorHandler("404", err404)
+	beego.Router("/equations/solve", &controllers.EquationsController{}, "get:Solve")
+	beego.Router("/util/inversionnumber", &controllers.UtilController{}, "get:InversionNumber")
+	beego.ErrorController(&ErrorController{})
 	beego.SetLogFuncCall(true)
 	beego.Run()
 }
 
-func err404(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	http.Error(w, "{\"message\":\"not found\"}", http.StatusNotFound)
+type ErrorController struct {
+	beego.Controller
+}
+
+type ErrMessage struct {
+	Message string
+}
+
+func (e ErrorController) Error500() {
+	e.Data["json"] = ErrMessage{
+		Message: "internal server error",
+	}
+	e.ServeJSON()
+}
+
+func (e ErrorController) Error404() {
+	e.Data["json"] = ErrMessage{
+		Message: "not found",
+	}
+	e.ServeJSON()
 }

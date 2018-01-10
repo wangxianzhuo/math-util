@@ -82,6 +82,35 @@ func NewEquations(unknownNum int, equationList []Equation) (Equations, error) {
 	}, nil
 }
 
+// NewEquationsWithElements new a Equations with factors and values
+func NewEquationsWithElements(factors [][]float64, values []float64, unknownNum int) (Equations, error) {
+	equationNum := len(factors)
+	if equationNum != len(values) {
+		return Equations{}, fmt.Errorf("Create new equtaions error: equation number %v can't match value number %v", equationNum, len(factors))
+	}
+
+	equations := Equations{
+		EquationList: make([]Equation, equationNum),
+		UnknownNum:   unknownNum,
+	}
+	for index, e := range factors {
+		if len(e) <= unknownNum {
+			for j := len(e); j < unknownNum; j++ {
+				e[j] = 0.0
+			}
+		} else {
+			e = e[:unknownNum]
+		}
+		equation, err := NewEquation(unknownNum, e, values[index])
+		if err != nil {
+			return Equations{}, fmt.Errorf("Create new equtaions error: %v", err)
+		}
+		equations.EquationList[index] = equation
+	}
+
+	return equations, nil
+}
+
 // EquationsValueVector 返回方程组值向量
 func (e Equations) EquationsValueVector() []float64 {
 	values := make([]float64, e.UnknownNum)
